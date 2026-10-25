@@ -60,16 +60,13 @@ docker compose up --build
 
 ## Vercel
 
-На Vercel диск не общий между вызовами. Чтобы удаления переживали обновление страницы, в проекте нужен Blob:
+Продакшен: https://dzen-code-test.vercel.app
 
-```bash
-npx vercel link
-npx vercel blob create-store inventory
-npx vercel env pull
-npx vercel --prod
-```
+Сборка описана в `vercel.json`: зависимости ставятся в корне, Next.js собирается в `apps/web`, результат берётся из `apps/web/.next`.
 
-Без `BLOB_READ_WRITE_TOKEN` интерфейс открывается, но файл данных живёт только внутри одного экземпляра функции. Локально и в Docker этого ограничения нет.
+На Vercel включена защита деплоя (Vercel Authentication). Тестировщик без аккаунта Vercel получит страницу входа. Её нужно выключить: Project Settings → Deployment Protection → отключить Vercel Authentication для Production.
+
+Без `BLOB_READ_WRITE_TOKEN` или `DATABASE_URL` данные на Vercel живут в файле экземпляра функции. Локально и в Docker удаления сохраняются надёжно. Для проверки чек-листа с перезагрузкой страницы надёжнее `npm run dev` или `docker compose up`.
 
 Переменные смотрите в `.env.example`. Секрет демо-токена: `inventory-demo-secret`. Для публикации задайте свой `JWT_SECRET`.
 

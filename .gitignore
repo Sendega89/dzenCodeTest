@@ -8,7 +8,9 @@ test-results
 data/*.json
 .env
 .env.local
+.env*.local
 *.log
 .DS_Store
 apps/products/.next
 .vercel
+vercel-project.json
