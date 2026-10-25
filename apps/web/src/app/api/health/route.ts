@@ -8,6 +8,8 @@ export function GET() {
     ? 'mysql'
     : process.env.BLOB_READ_WRITE_TOKEN
       ? 'blob'
-      : 'file'
+      : process.env.VERCEL
+        ? 'tmp'
+        : 'file'
   return json({ ok: true, driver })
 }

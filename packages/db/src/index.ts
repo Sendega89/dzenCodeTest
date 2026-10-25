@@ -20,7 +20,9 @@ export function createRepo(): Repo {
   const databaseUrl = process.env.DATABASE_URL
   if (databaseUrl && databaseUrl.startsWith('mysql')) return createMysqlRepo(databaseUrl)
   if (process.env.BLOB_READ_WRITE_TOKEN) return createBlobRepo()
-  const file = process.env.DATA_FILE || path.join(repoRoot(), 'data', 'inventory.json')
+  const file =
+    process.env.DATA_FILE ||
+    (process.env.VERCEL ? path.join('/tmp', 'inventory.json') : path.join(repoRoot(), 'data', 'inventory.json'))
   return createJsonRepo(file)
 }
 
