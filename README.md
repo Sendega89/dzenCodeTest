@@ -1,10 +1,10 @@
 # Inventory
 
-Учёт приходов и продуктов: список, карточка прихода, фильтры, живые часы, счётчик вкладок, подтверждение удаления и сохранение данных.
+Учёт приходов и продуктов.
 
 Демо-вход: `demo` / `demo`.
 
-## Запуск с нуля
+## Локально
 
 Нужны Node.js 20+ и npm.
 
@@ -14,92 +14,34 @@ npm run wasm:build
 npm run dev
 ```
 
-Откройте http://localhost:3000. Данные пишутся в `data/inventory.json`. Повторный запуск сохраняет удаления и новые записи.
+Откройте http://localhost:3000. Данные пишутся в `data/inventory.json`.
 
-Проверка, которую делает тестировщик:
+Переменные: `.env.example`. JWT сессии — httpOnly cookie. Секрет демо: `inventory-demo-secret`; для публикации задайте свой `JWT_SECRET`.
 
-1. Войти `demo` / `demo`.
-2. В шапке идут секунды, рядом число открытых вкладок. Вторая вкладка того же адреса увеличивает число до 2, закрытие уменьшает его в течение нескольких секунд.
-3. Клик по названию прихода открывает состав справа. Крестик возвращает широкий список.
-4. Сумма прихода равна сумме цен его продуктов отдельно в `$` и `uah`.
-5. Удаление спрашивает подтверждение. После обновления страницы запись не возвращается.
-6. На продуктах работают поиск, тип и спецификация. Число в заголовке — полное, «показано N» — после фильтра.
-7. Пустой результат, пустой приход и неверная гарантия (конец раньше начала) не ломают экран.
+## Docker (полная версия по ТЗ)
+
+```bash
+docker compose up --build
+```
+
+- Сайт: http://localhost:8080
+- Оболочка напрямую (только localhost): http://127.0.0.1:3002
+- MySQL Workbench (только localhost): `127.0.0.1:3306`, пароль `inventory`
+- Socket.io: тот же `:8080`, путь `/socket.io/`
+- Внутренние сервисы с хоста не публикуются
+
+Схема: `schema/inventory.sql` (Workbench: File → Open SQL Script). При `DATABASE_URL=mysql://...` тот же SQL применяется при старте.
 
 ## Проверки
 
 ```bash
 npm test
 npm run build
-npm run start
-```
-
-`npm test` покрывает деньги, даты, валидацию, схему MySQL и сценарий «создать приход, добавить продукт, удалить, перечитать файл, две вкладки».
-
-## Docker
-
-MySQL и отдельные процессы: веб, микрофронт продуктов, шлюз, приходы, продукты, авторизация, Socket.io, обработчик событий.
-
-```bash
-docker compose up --build
-```
-
-Полная версия открывается на http://localhost:8080. Вход `demo` / `demo`. Страница продуктов отдаётся отдельным фронтом, запросы создания и удаления идут через шлюз в сервисы, счётчик вкладок подключён к Socket.io.
-
-- Сайт: http://localhost:8080
-- Оболочка напрямую: http://localhost:3002
-- Микрофронт продуктов: http://localhost:3001/products
-- Шлюз: http://localhost:4000/health
-- Приходы: http://localhost:4101/orders
-- Продукты: http://localhost:4102/products
-- Вход сервиса: http://localhost:4103/login
-- Socket.io: http://localhost:4001
-
-Клик-тесты по уже запущенному Docker:
-
-```bash
 npx playwright install chromium
 BASE_URL=http://localhost:8080 npm run test:e2e
 ```
 
-В контейнерах та же схема, что в `schema/inventory.sql`. Пароль базы в compose — учебный `inventory`.
-
-## Схема базы
-
-Файл `schema/inventory.sql` открывается в MySQL Workbench: File → Open SQL Script. Таблицы приложения создаются этим же SQL при старте с `DATABASE_URL=mysql://...`.
-
 ## Vercel
 
-Продакшен: https://dzen-code-test.vercel.app
-
-Сборка описана в `vercel.json`: зависимости ставятся в корне, Next.js собирается в `apps/web`, результат берётся из `apps/web/.next`.
-
-На Vercel данные живут во временном файле экземпляра, счётчик вкладок идёт обычными запросами, а сервисы не запускаются. Вход `demo` / `demo`. Полная проверка — через Docker.
-
-Переменные смотрите в `.env.example`. Секрет демо-токена: `inventory-demo-secret`. Для публикации задайте свой `JWT_SECRET`.
-
-## Что закрывает матрицу
-
-| Требование | Где |
-| --- | --- |
-| React, Next.js SSR, TypeScript | `apps/web` |
-| Redux | `apps/web/src/store.ts` |
-| БЭМ и Bootstrap grid | `packages/ui/src/styles/app.css` |
-| REST через Axios | `apps/web/src/api.ts`, `app/api` |
-| GraphQL | `POST /api/graphql`, сервис gateway |
-| Формы и валидация | `packages/domain/src/validation.ts` |
-| JWT и Web Storage | cookie + `localStorage` (`inventory.token`, язык, id вкладки) |
-| i18n | русский по умолчанию, английский в Настройках |
-| Lazy loading | график, карта и граф грузятся отдельно |
-| График и карта | страница приходов и Настройки |
-| Граф связей | страница Группы, React Flow |
-| WebSocket / Socket.io | счётчик вкладок; в Docker сервис `realtime` |
-| Web Worker и WASM | `public/totals.worker.js`, `packages/wasm/sum.wat` |
-| PWA | `manifest.ts`, `public/sw.js` |
-| События | таблица `outbox`, сервис `worker` |
-| Микросервисы | `services/*` |
-| Микрофронт | `apps/products`, `basePath: /mfe` |
-| Тесты | `npm test` |
-| Адаптив | меню-ящик, карточки продуктов, панель прихода на весь экран |
-
-Нагрузка из матрицы (100 тысяч пользователей и миллион сообщений в сутки) здесь заложена так: сервисы без состояния, присутствие вкладок в общем хранилище, а не в памяти процесса, очередь `outbox` и отдельный Socket.io. Это учебный контур, не кластер на миллион соединений.
+Витрина без MySQL и микросервисов: https://dzen-code-test.vercel.app  
+Полная проверка — Docker.

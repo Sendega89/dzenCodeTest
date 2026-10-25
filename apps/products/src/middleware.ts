@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { readToken, TOKEN_COOKIE } from '@inventory/auth'
+import { TOKEN_COOKIE, readSession } from '@inventory/auth'
+import { routes } from '@inventory/domain'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (pathname.startsWith('/_next') || pathname.includes('.')) return NextResponse.next()
-  const token = request.cookies.get(TOKEN_COOKIE)?.value
-  const user = token ? await readToken(token) : null
+  const user = await readSession(request.cookies.get(TOKEN_COOKIE)?.value)
   if (user) return NextResponse.next()
-  return NextResponse.redirect(new URL('/login', request.url))
+  return NextResponse.redirect(new URL(routes.login(), request.url))
 }
 
 export const config = {

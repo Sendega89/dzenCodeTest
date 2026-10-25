@@ -15,8 +15,6 @@ export function useWasmTotal(values: number[]): number | null {
     }
     worker.postMessage({ id, values: values.map((value) => toCents(value)) })
     return () => worker.terminate()
-    // The joined key is the value identity for this small list.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 
   return total

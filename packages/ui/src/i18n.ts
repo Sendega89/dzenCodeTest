@@ -16,6 +16,14 @@ export const ru = {
   error: 'Не удалось выполнить действие. Попробуйте ещё раз.',
   loading: 'Сохранение…',
   dash: '—',
+  status: {
+    notFoundTitle: 'Страница не найдена',
+    notFoundText: 'Такого адреса нет, или запись уже удалена.',
+    notFoundCta: 'К приходам',
+    errorTitle: 'Что-то сломалось',
+    errorText: 'Интерфейс поймал ошибку и остановил этот экран, чтобы остальное приложение не упало.',
+    errorRetry: 'Попробовать снова',
+  },
   nav: {
     orders: 'Приход',
     groups: 'Группы',
@@ -54,6 +62,9 @@ export const ru = {
     user: 'Пользователь',
     order: 'Приход',
     reset: 'Сбросить фильтры',
+    page: 'Карточка продукта',
+    back: 'К продуктам',
+    created: 'Добавлен',
   },
   groups: {
     title: 'Группы',
@@ -66,6 +77,10 @@ export const ru = {
     empty: 'Пользователей пока нет.',
     login: 'Логин',
     products: 'Продуктов',
+    page: 'Карточка пользователя',
+    back: 'К пользователям',
+    assigned: 'Закреплённые продукты',
+    none: 'У этого пользователя пока нет продуктов.',
   },
   settings: {
     title: 'Настройки',
@@ -84,6 +99,7 @@ export const ru = {
     submit: 'Войти',
     pending: 'Входим…',
     error: 'Неверный логин или пароль',
+    unavailable: 'Сервер входа сейчас недоступен. Попробуйте ещё раз.',
     hint: 'Демо-доступ: demo / demo',
   },
   forms: {
@@ -135,6 +151,14 @@ export const en: typeof ru = {
   error: 'The action failed. Please try again.',
   loading: 'Saving…',
   dash: '—',
+  status: {
+    notFoundTitle: 'Page not found',
+    notFoundText: 'This address does not exist, or the record was already deleted.',
+    notFoundCta: 'Back to orders',
+    errorTitle: 'Something broke',
+    errorText: 'The interface caught an error and stopped this screen so the rest of the app stays up.',
+    errorRetry: 'Try again',
+  },
   nav: {
     orders: 'Orders',
     groups: 'Groups',
@@ -173,6 +197,9 @@ export const en: typeof ru = {
     user: 'User',
     order: 'Order',
     reset: 'Reset filters',
+    page: 'Product card',
+    back: 'Back to products',
+    created: 'Added',
   },
   groups: {
     title: 'Groups',
@@ -185,6 +212,10 @@ export const en: typeof ru = {
     empty: 'No users yet.',
     login: 'Login',
     products: 'Products',
+    page: 'User card',
+    back: 'Back to users',
+    assigned: 'Assigned products',
+    none: 'This user has no products yet.',
   },
   settings: {
     title: 'Settings',
@@ -203,6 +234,7 @@ export const en: typeof ru = {
     submit: 'Sign in',
     pending: 'Signing in…',
     error: 'Wrong login or password',
+    unavailable: 'The login server is unavailable. Try again.',
     hint: 'Demo access: demo / demo',
   },
   forms: {

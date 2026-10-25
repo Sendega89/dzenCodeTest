@@ -1,10 +1,12 @@
 'use client'
 
-import { formatLongDate, formatMoney, formatShortDate, type Locale, type ProductView } from '@inventory/domain'
-import { Plus, Trash } from './icons'
+import { formatLongDate, formatMoney, formatShortDate, routes, type Locale, type ProductView } from '@inventory/domain'
+import { Plus } from './icons'
 import type { Messages } from './i18n'
+import { DeleteButton, ProductIdentity, ProductStatus, StatusDot } from './product-line'
+import { Button, EmptyHint, PageHead } from './primitives'
 
-type ProductsBoardProps = {
+type ProductsProps = {
   messages: Messages
   locale: Locale
   products: ProductView[]
@@ -15,26 +17,22 @@ type ProductsBoardProps = {
   specifications: string[]
   onType: (value: string) => void
   onSpecification: (value: string) => void
-  onOpenOrder: (id: number) => void
   onDelete: (product: ProductView) => void
   onCreate: () => void
   onReset: () => void
 }
 
-export function ProductsBoard(props: ProductsBoardProps) {
+export function Products(props: ProductsProps) {
   const { messages, locale, products, total } = props
   const filtered = Boolean(props.type || props.specification)
   return (
     <section>
-      <div className="page-head">
-        <h1>
-          {messages.products.title} / {total}
-        </h1>
-        {filtered ? (
-          <span className="muted">
-            {messages.shown} {products.length}
-          </span>
-        ) : null}
+      <PageHead
+        title={messages.products.title}
+        total={total}
+        shown={filtered ? products.length : undefined}
+        messages={messages}
+        trail={(
         <div className="filters">
           <label>
             {messages.products.type}
@@ -54,18 +52,19 @@ export function ProductsBoard(props: ProductsBoardProps) {
               ))}
             </select>
           </label>
-          <button type="button" className="linkish" onClick={props.onCreate}>
+          <Button variant="link" onClick={props.onCreate}>
             <Plus /> {messages.products.add}
-          </button>
+          </Button>
         </div>
-      </div>
+        )}
+      />
       {products.length === 0 ? (
-        <p className="muted">
+        <EmptyHint>
           {filtered || total > 0 ? messages.products.filtered : messages.products.empty}{' '}
           {filtered ? (
-            <button type="button" className="linkish" onClick={props.onReset}>{messages.products.reset}</button>
+            <Button variant="link" onClick={props.onReset}>{messages.products.reset}</Button>
           ) : null}
-        </p>
+        </EmptyHint>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
@@ -86,14 +85,11 @@ export function ProductsBoard(props: ProductsBoardProps) {
               {products.map((product) => (
                 <tr key={product.id}>
                   <td data-label="">
-                    <span className={product.status === 'repair' ? 'dot dot--repair' : 'dot'} />
+                    <StatusDot status={product.status} />
                   </td>
                   <td data-label={messages.products.title}>
-                    <div className="product-line__title">{product.title}</div>
-                    <div className="product-line__sn">SN: {product.serialNumber}</div>
-                    <div className={product.status === 'repair' ? 'status status--repair' : 'status'}>
-                      {product.status === 'repair' ? messages.products.repair : messages.products.free}
-                    </div>
+                    <ProductIdentity product={product} href={routes.product(product.id)} />
+                    <ProductStatus status={product.status} messages={messages} />
                   </td>
                   <td data-label={messages.products.type}>
                     <div>{product.type}</div>
@@ -108,15 +104,17 @@ export function ProductsBoard(props: ProductsBoardProps) {
                     <div className="nowrap">{formatMoney(product.price.find((price) => price.symbol === 'UAH')?.value ?? 0, 'UAH')}</div>
                   </td>
                   <td data-label={messages.products.group}>{product.groupName ?? messages.dash}</td>
-                  <td data-label={messages.products.user}>{product.userName ?? messages.dash}</td>
+                  <td data-label={messages.products.user}>
+                    {product.userId && product.userLogin ? (
+                      <a href={routes.user({ id: product.userId, login: product.userLogin })}>{product.userName}</a>
+                    ) : messages.dash}
+                  </td>
                   <td data-label={messages.products.order}>
-                    <a href={`/orders?id=${product.orderId}`}>{product.orderTitle}</a>
+                    <a href={routes.order(product.orderId)}>{product.orderTitle}</a>
                     <div className="muted">{formatLongDate(product.createdAt, locale)}</div>
                   </td>
                   <td data-label={messages.delete}>
-                    <button type="button" className="trash" aria-label={messages.delete} onClick={() => props.onDelete(product)}>
-                      <Trash />
-                    </button>
+                    <DeleteButton label={messages.delete} onClick={() => props.onDelete(product)} />
                   </td>
                 </tr>
               ))}

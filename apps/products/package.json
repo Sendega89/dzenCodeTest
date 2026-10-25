@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@inventory/auth": "1.0.0",
+    "@inventory/db": "1.0.0",
     "@inventory/domain": "1.0.0",
     "@inventory/ui": "1.0.0",
     "next": "^15.5.6",

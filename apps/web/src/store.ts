@@ -14,11 +14,8 @@ const inventory = createSlice({
 
 const session = createSlice({
   name: 'session',
-  initialState: { count: null as number | null, user: null as SessionUser | null },
+  initialState: { user: null as SessionUser | null },
   reducers: {
-    setCount: (state, action: PayloadAction<number>) => {
-      state.count = action.payload
-    },
     setUser: (state, action: PayloadAction<SessionUser | null>) => {
       state.user = action.payload
     },
@@ -26,14 +23,14 @@ const session = createSlice({
 })
 
 export const { applySnapshot } = inventory.actions
-export const { setCount, setUser } = session.actions
+export const { setUser } = session.actions
 
 export function makeStore(snapshot: Snapshot, user: SessionUser | null) {
   return configureStore({
     reducer: { inventory: inventory.reducer, session: session.reducer },
     preloadedState: {
       inventory: snapshot,
-      session: { count: null, user },
+      session: { user },
     },
   })
 }

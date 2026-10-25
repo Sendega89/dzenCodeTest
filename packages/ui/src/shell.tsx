@@ -1,40 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { dayCaption, formatClock, formatHeaderDate, type Locale } from '@inventory/domain'
-import { Avatar, ClockIcon, Gear, Logo, MenuIcon } from './icons'
+import { routes, type Locale } from '@inventory/domain'
+import { Avatar, Gear, Logo, MenuIcon } from './icons'
 import type { Messages } from './i18n'
-
-const LINKS = [
-  { href: '/orders', key: 'orders' },
-  { href: '/groups', key: 'groups' },
-  { href: '/products', key: 'products' },
-  { href: '/users', key: 'users' },
-  { href: '/settings', key: 'settings' },
-] as const
+import { NavigationMenu } from './navigation-menu'
+import { TopMenu } from './top-menu'
 
 type ShellProps = {
   messages: Messages
   locale: Locale
   pathname: string
   query: string
-  tabCount: number | null
-  realtime?: 'socket' | 'http'
   onSearch: (value: string) => void
   children: React.ReactNode
 }
 
-export function Shell({ messages, locale, pathname, query, tabCount, realtime = 'http', onSearch, children }: ShellProps) {
+export function Shell({ messages, locale, pathname, query, onSearch, children }: ShellProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(query)
-  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => setValue(query), [query])
-  useEffect(() => {
-    setNow(new Date())
-    const timer = window.setInterval(() => setNow(new Date()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
   useEffect(() => {
     const timer = window.setTimeout(() => onSearch(value), 250)
     return () => window.clearTimeout(timer)
@@ -45,26 +31,11 @@ export function Shell({ messages, locale, pathname, query, tabCount, realtime = 
       <aside className={open ? 'sidebar sidebar--open' : 'sidebar'}>
         <div className="sidebar__user">
           <Avatar />
-          <a className="avatar__gear" href="/settings" aria-label={messages.nav.settings}>
+          <a className="avatar__gear" href={routes.settings()} aria-label={messages.nav.settings}>
             <Gear />
           </a>
         </div>
-        <nav className="nav" aria-label={messages.menu}>
-          {LINKS.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`)
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                className={active ? 'nav__link nav__link--active' : 'nav__link'}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => setOpen(false)}
-              >
-                {messages.nav[link.key]}
-              </a>
-            )
-          })}
-        </nav>
+        <NavigationMenu pathname={pathname} messages={messages} onNavigate={() => setOpen(false)} />
       </aside>
       {open ? <button type="button" className="nav-backdrop" aria-label={messages.close} onClick={() => setOpen(false)} /> : null}
       <div className="shell__body">
@@ -72,7 +43,7 @@ export function Shell({ messages, locale, pathname, query, tabCount, realtime = 
           <button type="button" className="icon-button topbar__menu" aria-label={messages.menu} onClick={() => setOpen(true)}>
             <MenuIcon />
           </button>
-          <a className="brand" href="/orders">
+          <a className="brand" href={routes.orders()}>
             <Logo />
             {messages.brand}
           </a>
@@ -84,19 +55,7 @@ export function Shell({ messages, locale, pathname, query, tabCount, realtime = 
               onChange={(event) => setValue(event.target.value)}
             />
           </form>
-          <div className="clock">
-            <div>
-              <div className="clock__caption">{now ? dayCaption(now, locale, messages.today) : messages.today}</div>
-              <div className="clock__date">{now ? formatHeaderDate(now, locale) : ''}</div>
-            </div>
-            <div className="clock__time">
-              <ClockIcon />
-              <span>{now ? formatClock(now) : '--:--:--'}</span>
-            </div>
-            <div className="counter" data-realtime={realtime} aria-label={messages.tabs} title={messages.tabs}>
-              {tabCount ?? '·'}
-            </div>
-          </div>
+          <TopMenu messages={messages} locale={locale} />
         </header>
         <main className="content">{children}</main>
       </div>

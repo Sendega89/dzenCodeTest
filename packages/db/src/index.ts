@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { createBlobRepo, createJsonRepo, createMemoryRepo, type Repo } from './json-repo'
+import { createJsonRepo, createMemoryRepo, type Repo } from './json-repo'
 import { createMysqlRepo } from './mysql-repo'
 
 function repoRoot(): string {
@@ -19,7 +19,6 @@ const globalStore = globalThis as typeof globalThis & { __inventoryRepo?: Repo }
 export function createRepo(): Repo {
   const databaseUrl = process.env.DATABASE_URL
   if (databaseUrl && databaseUrl.startsWith('mysql')) return createMysqlRepo(databaseUrl)
-  if (process.env.BLOB_READ_WRITE_TOKEN) return createBlobRepo()
   const file =
     process.env.DATA_FILE ||
     (process.env.VERCEL ? path.join('/tmp', 'inventory.json') : path.join(repoRoot(), 'data', 'inventory.json'))

@@ -1,8 +1,10 @@
 'use client'
 
-import { formatLongDate, formatMoney, formatShortDate, type Locale, type OrderView, type ProductView } from '@inventory/domain'
-import { CloseIcon, ListIcon, Plus, Trash } from './icons'
+import { formatLongDate, formatMoney, formatShortDate, routes, type Locale, type OrderView, type ProductView } from '@inventory/domain'
+import { CloseIcon, ListIcon, Plus } from './icons'
 import { productWord, type Messages } from './i18n'
+import { DeleteButton, ProductLine } from './product-line'
+import { Button, EmptyHint, PageHead } from './primitives'
 
 function Dates({ value, locale }: { value: string; locale: Locale }) {
   return (
@@ -13,41 +15,13 @@ function Dates({ value, locale }: { value: string; locale: Locale }) {
   )
 }
 
-function ProductRow({
-  product,
-  messages,
-  onDelete,
-}: {
-  product: ProductView
-  messages: Messages
-  onDelete: (product: ProductView) => void
-}) {
-  return (
-    <div className="product-line">
-      <span className={product.status === 'repair' ? 'dot dot--repair' : 'dot'} />
-      <img className="thumb" src={product.photo || '/monitor.svg'} alt="" />
-      <div>
-        <div className="product-line__title">{product.title}</div>
-        <div className="product-line__sn">SN: {product.serialNumber}</div>
-      </div>
-      <div className={product.status === 'repair' ? 'status status--repair' : 'status'}>
-        {product.status === 'repair' ? messages.products.repair : messages.products.free}
-      </div>
-      <button type="button" className="trash" aria-label={messages.delete} onClick={() => onDelete(product)}>
-        <Trash />
-      </button>
-    </div>
-  )
-}
-
-type OrdersBoardProps = {
+type OrdersProps = {
   messages: Messages
   locale: Locale
   orders: OrderView[]
   total: number
   query: string
   selected: OrderView | null
-  products: ProductView[]
   onOpen: (id: number) => void
   onClose: () => void
   onCreate: () => void
@@ -56,23 +30,22 @@ type OrdersBoardProps = {
   onAddProduct: () => void
 }
 
-export function OrdersBoard(props: OrdersBoardProps) {
-  const { messages, locale, orders, total, query, selected, products } = props
+export function Orders(props: OrdersProps) {
+  const { messages, locale, orders, total, query, selected } = props
+  const products = selected?.products ?? []
   return (
     <section>
-      <div className="page-head">
-        <button type="button" className="plus" aria-label={messages.orders.add} onClick={props.onCreate}>
-          <Plus />
-        </button>
-        <h1>
-          {messages.orders.title} / {total}
-        </h1>
-        {query && orders.length !== total ? (
-          <span className="muted">
-            {messages.shown} {orders.length}
-          </span>
-        ) : null}
-      </div>
+      <PageHead
+        title={messages.orders.title}
+        total={total}
+        shown={query && orders.length !== total ? orders.length : undefined}
+        messages={messages}
+        lead={(
+          <Button variant="plus" aria-label={messages.orders.add} onClick={props.onCreate}>
+            <Plus />
+          </Button>
+        )}
+      />
       {selected ? (
         <div className="orders--split">
           <div className="order-list">
@@ -95,30 +68,30 @@ export function OrdersBoard(props: OrdersBoardProps) {
               </button>
             ))}
           </div>
-          <article className="panel">
+          <article key={selected.id} className="panel animate__animated animate__fadeIn">
             <div className="panel__head">
               <h2 className="panel__title">{selected.title}</h2>
-              <button type="button" className="icon-button icon-button--ghost panel__close" aria-label={messages.close} onClick={props.onClose}>
+              <Button variant="icon" className="icon-button--ghost panel__close" aria-label={messages.close} onClick={props.onClose}>
                 <CloseIcon />
-              </button>
+              </Button>
             </div>
-            <button type="button" className="linkish" onClick={props.onAddProduct}>
+            <Button variant="link" onClick={props.onAddProduct}>
               <Plus /> {messages.orders.addProduct}
-            </button>
-            {products.length === 0 ? <p className="muted">{messages.orders.products}</p> : null}
+            </Button>
+            {products.length === 0 ? <EmptyHint>{messages.orders.products}</EmptyHint> : null}
             {products.map((product) => (
-              <ProductRow key={product.id} product={product} messages={messages} onDelete={props.onDeleteProduct} />
+              <ProductLine key={product.id} product={product} messages={messages} onDelete={props.onDeleteProduct} />
             ))}
           </article>
         </div>
       ) : (
         <div className="order-list">
-          {orders.length === 0 ? <p className="muted">{query ? messages.orders.filtered : messages.orders.empty}</p> : null}
+          {orders.length === 0 ? <EmptyHint>{query ? messages.orders.filtered : messages.orders.empty}</EmptyHint> : null}
           {orders.map((order) => (
             <article key={order.id} className="order-row">
-              <button type="button" className="order-row__title" onClick={() => props.onOpen(order.id)}>
+              <a className="order-row__title" href={routes.order(order.id, query || undefined)}>
                 {order.title}
-              </button>
+              </a>
               <div className="meta">
                 <ListIcon />
                 <span>
@@ -131,17 +104,11 @@ export function OrdersBoard(props: OrdersBoardProps) {
                 <span>{formatMoney(order.totalUsd, 'USD')}</span>
                 <span>{formatMoney(order.totalUah, 'UAH')}</span>
               </div>
-              <button type="button" className="trash" aria-label={messages.delete} onClick={() => props.onDeleteOrder(order)}>
-                <Trash />
-              </button>
+              <DeleteButton label={messages.delete} onClick={() => props.onDeleteOrder(order)} />
             </article>
           ))}
         </div>
       )}
     </section>
   )
-}
-
-export function ProductSummary({ product, messages }: { product: ProductView; messages: Messages }) {
-  return <ProductRow product={product} messages={messages} onDelete={() => undefined} />
 }

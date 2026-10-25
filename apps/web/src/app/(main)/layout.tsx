@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers'
 import { Suspense } from 'react'
-import { readToken, TOKEN_COOKIE } from '@inventory/auth'
+import { TOKEN_COOKIE, readSession } from '@inventory/auth'
 import { loadSnapshot } from '@inventory/db'
-import type { Locale } from '@inventory/domain'
+import { localeOf } from '@inventory/domain'
 import { AppProviders } from '@/providers'
 import { Frame } from '@/frame'
 
@@ -10,9 +10,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies()
-  const locale: Locale = jar.get('locale')?.value === 'en' ? 'en' : 'ru'
-  const token = jar.get(TOKEN_COOKIE)?.value
-  const session = token ? await readToken(token) : null
+  const locale = localeOf(jar.get('locale')?.value)
+  const session = await readSession(jar.get(TOKEN_COOKIE)?.value)
   const snapshot = await loadSnapshot()
   const user = snapshot.users.find((item) => item.id === session?.id) ?? null
   return (

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { Source_Sans_3 } from 'next/font/google'
-import { TOKEN_COOKIE, readToken } from '@inventory/auth'
-import type { Locale } from '@inventory/domain'
+import { TOKEN_COOKIE, readSession } from '@inventory/auth'
+import { localeOf } from '@inventory/domain'
 import { AppProviders } from '@/providers'
 import 'bootstrap/dist/css/bootstrap-grid.min.css'
 import 'animate.css/animate.min.css'
@@ -21,9 +21,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies()
-  const locale: Locale = jar.get('locale')?.value === 'en' ? 'en' : 'ru'
-  const token = jar.get(TOKEN_COOKIE)?.value
-  const session = token ? await readToken(token) : null
+  const locale = localeOf(jar.get('locale')?.value)
+  const session = await readSession(jar.get(TOKEN_COOKIE)?.value)
   return (
     <html lang={locale}>
       <body className={font.className}>

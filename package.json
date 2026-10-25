@@ -17,17 +17,20 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "wasm:build": "node packages/wasm/build.mjs",
-    "lint": "tsc -p packages/domain/tsconfig.json --noEmit && tsc -p packages/db/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
-    "db:schema": "node -e \"console.log('schema/inventory.sql')\"",
+    "lint": "node ./node_modules/typescript/bin/tsc -p packages/domain/tsconfig.json --noEmit && node ./node_modules/typescript/bin/tsc -p packages/db/tsconfig.json --noEmit && node ./node_modules/typescript/bin/tsc -p apps/web/tsconfig.json --noEmit && node ./node_modules/eslint/bin/eslint.js packages apps/web/src apps/products/src services --max-warnings=0",
+    "load:concurrent": "node scripts/concurrent-load.mjs",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down -v"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.9.1",
     "concurrently": "^9.2.1",
+    "eslint": "^10.13.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^3.2.4",
     "wabt": "^1.0.38"
   },

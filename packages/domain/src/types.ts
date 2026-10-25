@@ -1,4 +1,8 @@
 export type Locale = 'ru' | 'en'
+
+export function localeOf(value: string | undefined | null): Locale {
+  return value === 'en' ? 'en' : 'ru'
+}
 export type ProductStatus = 'free' | 'repair'
 export type Currency = 'USD' | 'UAH'
 
@@ -46,12 +50,14 @@ export type OrderView = Order & {
   productCount: number
   totalUsd: number
   totalUah: number
+  products: ProductView[]
 }
 
 export type ProductView = Product & {
   orderTitle: string
   groupName: string | null
   userName: string | null
+  userLogin: string | null
 }
 
 export type GroupView = Group & { productCount: number }

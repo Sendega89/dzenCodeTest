@@ -7,7 +7,7 @@ services:
       MYSQL_PASSWORD: inventory
       MYSQL_ROOT_PASSWORD: inventory
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pinventory"]
       interval: 5s
@@ -19,7 +19,7 @@ services:
   web:
     build: .
     ports:
-      - "3002:3000"
+      - "127.0.0.1:3002:3000"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       JWT_SECRET: inventory-demo-secret
@@ -38,11 +38,14 @@ services:
   products-mfe:
     build: .
     command: npm run start -w @inventory/products -- --port 3001
-    ports:
-      - "3001:3001"
     environment:
       GATEWAY_URL: http://gateway:4000
       JWT_SECRET: inventory-demo-secret
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     depends_on:
       gateway:
         condition: service_healthy
@@ -57,13 +60,13 @@ services:
       web:
         condition: service_healthy
       products-mfe:
+        condition: service_healthy
+      realtime:
         condition: service_started
 
   gateway:
     build: .
     command: npm run start -w @inventory/gateway
-    ports:
-      - "4000:4000"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       JWT_SECRET: inventory-demo-secret
@@ -89,8 +92,6 @@ services:
   orders:
     build: .
     command: npm run start -w @inventory/orders-service
-    ports:
-      - "4101:4101"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       PORT: 4101
@@ -101,8 +102,6 @@ services:
   products:
     build: .
     command: npm run start -w @inventory/products-service
-    ports:
-      - "4102:4102"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       PORT: 4102
@@ -113,8 +112,6 @@ services:
   auth:
     build: .
     command: npm run start -w @inventory/auth-service
-    ports:
-      - "4103:4103"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       JWT_SECRET: inventory-demo-secret
@@ -126,9 +123,8 @@ services:
   realtime:
     build: .
     command: npm run start -w @inventory/realtime
-    ports:
-      - "4001:4001"
     environment:
+      CORS_ORIGIN: http://localhost:8080
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       PORT: 4001
     depends_on:

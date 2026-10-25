@@ -7,7 +7,7 @@ COPY services ./services
 COPY schema ./schema
 COPY tsconfig.base.json ./
 RUN npm ci && npm run wasm:build
-ARG NEXT_PUBLIC_REALTIME_URL=http://localhost:4001
+ARG NEXT_PUBLIC_REALTIME_URL=same-origin
 ENV NEXT_PUBLIC_REALTIME_URL=$NEXT_PUBLIC_REALTIME_URL
 RUN npm run build -w @inventory/web && npm run build -w @inventory/products
 EXPOSE 3000

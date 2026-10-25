@@ -1,13 +1,14 @@
 'use client'
 
-import type { GroupView, SessionUser, UserView } from '@inventory/domain'
+import { routes, type GroupView, type SessionUser, type UserView } from '@inventory/domain'
 import type { Messages } from './i18n'
+import { Button, EmptyHint, PageHead } from './primitives'
 
 export function GroupsBoard({ messages, groups }: { messages: Messages; groups: GroupView[] }) {
   return (
     <section>
-      <div className="page-head"><h1>{messages.groups.title} / {groups.length}</h1></div>
-      {groups.length === 0 ? <p className="muted">{messages.groups.empty}</p> : (
+      <PageHead title={messages.groups.title} total={groups.length} messages={messages} />
+      {groups.length === 0 ? <EmptyHint>{messages.groups.empty}</EmptyHint> : (
         <div className="cards">
           {groups.map((group) => (
             <article key={group.id} className="plain-card">
@@ -24,8 +25,8 @@ export function GroupsBoard({ messages, groups }: { messages: Messages; groups: 
 export function UsersBoard({ messages, users }: { messages: Messages; users: UserView[] }) {
   return (
     <section>
-      <div className="page-head"><h1>{messages.users.title} / {users.length}</h1></div>
-      {users.length === 0 ? <p className="muted">{messages.users.empty}</p> : (
+      <PageHead title={messages.users.title} total={users.length} messages={messages} />
+      {users.length === 0 ? <EmptyHint>{messages.users.empty}</EmptyHint> : (
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -38,7 +39,7 @@ export function UsersBoard({ messages, users }: { messages: Messages; users: Use
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td data-label={messages.users.title}>{user.name}</td>
+                  <td data-label={messages.users.title}><a href={routes.user(user)}>{user.name}</a></td>
                   <td data-label={messages.users.login}>{user.login}</td>
                   <td data-label={messages.users.products}>{user.productCount}</td>
                 </tr>
@@ -68,7 +69,7 @@ export function SettingsBoard({
 }) {
   return (
     <section>
-      <div className="page-head"><h1>{messages.settings.title}</h1></div>
+      <PageHead title={messages.settings.title} messages={messages} />
       <article className="plain-card stack">
         <h3>{messages.settings.language}</h3>
         <div className="segmented">
@@ -78,7 +79,7 @@ export function SettingsBoard({
         <h3>{messages.settings.session}</h3>
         <p>{user ? `${user.name} · ${user.login}` : messages.dash}</p>
         <p className="hint">{messages.settings.install}</p>
-        <button type="button" className="btn" onClick={onLogout}>{messages.logout}</button>
+        <Button onClick={onLogout}>{messages.logout}</Button>
       </article>
       <article className="map-card">
         <h2>{messages.settings.map}</h2>

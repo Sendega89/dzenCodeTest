@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { isAxiosError } from 'axios'
 import { LoginCard } from '@inventory/ui'
-import { api, rememberToken } from '@/api'
+import { api } from '@/api'
 import { useI18n } from '@/providers'
 
 export default function LoginPage() {
   const { messages } = useI18n()
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   return (
     <LoginCard
@@ -17,16 +18,15 @@ export default function LoginPage() {
       error={error}
       onSubmit={(login, password) => {
         setPending(true)
-        setError(false)
+        setError(null)
         void api
-          .post<{ token: string }>('/api/auth/login', { login, password })
-          .then((response) => {
-            rememberToken(response.data.token)
-            window.localStorage.setItem('inventory.locale', window.localStorage.getItem('inventory.locale') || 'ru')
+          .post('/api/auth/login', { login, password })
+          .then(() => {
             window.location.href = '/orders'
           })
-          .catch(() => {
-            setError(true)
+          .catch((cause: unknown) => {
+            const status = isAxiosError(cause) ? cause.response?.status : undefined
+            setError(status === 401 ? messages.login.error : messages.login.unavailable)
             setPending(false)
           })
       }}

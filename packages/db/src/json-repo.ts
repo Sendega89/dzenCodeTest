@@ -125,30 +125,3 @@ export function createJsonRepo(file: string): Repo {
   }
   return repoFrom(store, () => ensureSeed(store))
 }
-
-export function createBlobRepo(): Repo {
-  const pathname = 'inventory.json'
-  let cache: DbState | null = null
-  const store: Store = {
-    async read() {
-      if (cache) return structuredClone(cache)
-      const { get } = await import('@vercel/blob')
-      const blob = await get(pathname, { access: 'private' })
-      if (!blob || !blob.stream) return emptyState()
-      const text = await new Response(blob.stream).text()
-      cache = JSON.parse(text) as DbState
-      return structuredClone(cache)
-    },
-    async write(next) {
-      const { put } = await import('@vercel/blob')
-      await put(pathname, JSON.stringify(next), {
-        access: 'private',
-        addRandomSuffix: false,
-        allowOverwrite: true,
-        contentType: 'application/json',
-      })
-      cache = structuredClone(next)
-    },
-  }
-  return repoFrom(store, () => ensureSeed(store))
-}

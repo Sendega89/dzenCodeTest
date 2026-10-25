@@ -25,6 +25,7 @@ describe('inventory repository', () => {
     if (!order) return
     const own = initial.products.filter((product) => product.orderId === order.id)
     expect(order.productCount).toBe(own.length)
+    expect(order.products.map((item) => item.id)).toEqual(own.map((item) => item.id))
 
     const created = await repo.createOrder({ title: 'Новый приход', createdAt: '2026-10-25', description: '' })
     const added = created.orders.find((item) => item.title === 'Новый приход')
@@ -66,6 +67,19 @@ describe('inventory repository', () => {
     const left = await repo.leavePresence('tab-a')
     expect(left.presenceCount).toBe(1)
     expect((await repo.snapshot(now + 20_000)).presenceCount).toBe(0)
+  })
+
+  it('serializes concurrent writes without dropping rows', async () => {
+    const repo = createMemoryRepo()
+    const before = (await repo.snapshot()).orders.length
+    await Promise.all(
+      Array.from({ length: 40 }, (_, index) =>
+        repo.createOrder({ title: `Load ${index}`, createdAt: '2026-10-25', description: '' }),
+      ),
+    )
+    const after = await repo.snapshot()
+    expect(after.orders.length).toBe(before + 40)
+    expect(new Set(after.orders.map((order) => order.id)).size).toBe(after.orders.length)
   })
 
   it('logs in only with the demo password', async () => {

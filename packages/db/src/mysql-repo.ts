@@ -173,7 +173,7 @@ async function replaceInventory(sql: Sql, state: DbState): Promise<void> {
 export function createMysqlRepo(databaseUrl: string): Repo {
   const pool = createPool({
     uri: databaseUrl,
-    connectionLimit: 8,
+    connectionLimit: 32,
     multipleStatements: true,
     charset: 'utf8mb4',
     dateStrings: true,

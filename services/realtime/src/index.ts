@@ -1,13 +1,20 @@
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { getRepo } from '@inventory/db'
+import { presenceId } from '@inventory/domain'
 
 const port = Number(process.env.PORT || 4001)
 const server = createServer((_req, res) => {
-  res.writeHead(200, { 'content-type': 'application/json' })
-  res.end(JSON.stringify({ ok: true, service: 'realtime' }))
+  if (_req.url === '/health' || _req.url === '/') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ ok: true, service: 'realtime' }))
+    return
+  }
+  res.writeHead(404)
+  res.end()
 })
-const io = new Server(server, { cors: { origin: '*' }, transports: ['websocket'] })
+const origins = (process.env.CORS_ORIGIN || 'http://localhost:8080').split(',').map((item) => item.trim())
+const io = new Server(server, { cors: { origin: origins, credentials: true } })
 
 async function broadcast() {
   const snapshot = await getRepo().snapshot()
@@ -15,8 +22,8 @@ async function broadcast() {
 }
 
 io.on('connection', (socket) => {
-  const clientId = String(socket.handshake.auth?.clientId || '')
-  if (!/^[\w-]{8,64}$/.test(clientId)) {
+  const clientId = presenceId(socket.handshake.auth?.clientId)
+  if (!clientId) {
     socket.disconnect()
     return
   }

@@ -15,26 +15,28 @@ export function activePresence(state: DbState, now = Date.now()) {
 }
 
 export function project(state: DbState, now = Date.now()): Snapshot {
-  const orders: OrderView[] = state.orders
-    .map((order) => {
-      const products = state.products.filter((product) => product.orderId === order.id)
-      return {
-        ...order,
-        productCount: products.length,
-        totalUsd: sumByCurrency(products, 'USD'),
-        totalUah: sumByCurrency(products, 'UAH'),
-      }
-    })
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
-
   const products: ProductView[] = state.products
     .map((product) => ({
       ...product,
       orderTitle: state.orders.find((order) => order.id === product.orderId)?.title ?? '—',
       groupName: state.groups.find((group) => group.id === product.groupId)?.name ?? null,
       userName: state.users.find((user) => user.id === product.userId)?.name ?? null,
+      userLogin: state.users.find((user) => user.id === product.userId)?.login ?? null,
     }))
     .sort((a, b) => b.id - a.id)
+
+  const orders: OrderView[] = state.orders
+    .map((order) => {
+      const nested = products.filter((product) => product.orderId === order.id)
+      return {
+        ...order,
+        products: nested,
+        productCount: nested.length,
+        totalUsd: sumByCurrency(nested, 'USD'),
+        totalUah: sumByCurrency(nested, 'UAH'),
+      }
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
 
   const groups: GroupView[] = state.groups.map((group) => ({
     ...group,

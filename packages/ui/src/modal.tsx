@@ -46,9 +46,9 @@ export function Modal({ title, closeLabel, onClose, children, footer, danger }: 
   }, [onClose])
 
   return (
-    <div className="modal-root" onMouseDown={onClose}>
+    <div className="modal-root animate__animated animate__fadeIn" onMouseDown={onClose}>
       <div
-        className={danger ? 'modal modal--danger' : 'modal'}
+        className={(danger ? 'modal modal--danger' : 'modal') + ' animate__animated animate__zoomIn'}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

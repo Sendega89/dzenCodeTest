@@ -1,5 +1,5 @@
 import { createInventoryYoga, FieldValidationError, NotFoundError, getRepo } from '@inventory/db'
-import type { Snapshot } from '@inventory/domain'
+import { presenceId, type Snapshot } from '@inventory/domain'
 import { listen, readBody, send, withRepo } from '../../_shared/http.ts'
 
 const port = Number(process.env.PORT || 4000)
@@ -29,19 +29,23 @@ function reply(res: Parameters<typeof send>[0], result: { status: number; payloa
 async function snapshotFromServices(): Promise<Snapshot> {
   let last = 'upstream snapshot failed'
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const [ordersResult, productsResult, local] = await Promise.all([
+    const [ordersResult, productsResult, groupsResult, usersResult, local] = await Promise.all([
       callService(`${ordersUrl}/orders`, 'GET'),
       callService(`${productsUrl}/products`, 'GET'),
+      callService(`${productsUrl}/groups`, 'GET'),
+      callService(`${authUrl}/users`, 'GET'),
       getRepo().snapshot(),
     ])
-    if (ordersResult.status === 200 && productsResult.status === 200) {
+    if (ordersResult.status === 200 && productsResult.status === 200 && groupsResult.status === 200 && usersResult.status === 200) {
       return {
         ...local,
         orders: ordersResult.payload as Snapshot['orders'],
         products: productsResult.payload as Snapshot['products'],
+        groups: groupsResult.payload as Snapshot['groups'],
+        users: usersResult.payload as Snapshot['users'],
       }
     }
-    last = `orders ${ordersResult.status}, products ${productsResult.status}`
+    last = `orders ${ordersResult.status}, products ${productsResult.status}, groups ${groupsResult.status}, users ${usersResult.status}`
     await new Promise((resolve) => setTimeout(resolve, 500))
   }
   throw new Error(last)
@@ -49,6 +53,13 @@ async function snapshotFromServices(): Promise<Snapshot> {
 
 const yoga = createInventoryYoga(getRepo(), {
   snapshot: snapshotFromServices,
+  login: async (login, password) => {
+    const result = await callService(`${authUrl}/login`, 'POST', { login, password })
+    if (result.status === 401) return null
+    if (result.status !== 200) throw new Error('upstream')
+    const payload = result.payload as { token: string; user: { id: number; name: string; login: string } }
+    return { ...payload, snapshot: await snapshotFromServices() }
+  },
   createOrder: async (input) => {
     const result = await callService(`${ordersUrl}/orders`, 'POST', input)
     if (result.status === 400) throw new FieldValidationError((result.payload as { fields?: { field: string; message: string }[] }).fields ?? [])
@@ -69,10 +80,6 @@ const yoga = createInventoryYoga(getRepo(), {
     return result.payload as Snapshot
   },
 })
-
-function clientId(value: unknown): string | null {
-  return typeof value === 'string' && /^[\w-]{8,64}$/.test(value) ? value : null
-}
 
 listen(port, async (req, res) => {
   const url = new URL(req.url || '/', 'http://localhost')
@@ -130,14 +137,14 @@ listen(port, async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/api/presence') {
     const body = (await readBody(req)) as { clientId?: unknown }
-    const id = clientId(body?.clientId)
+    const id = presenceId(body?.clientId)
     if (!id) return send(res, 400, { error: 'validation' })
     return withRepo(res, async (repo) => ({ count: (await repo.touchPresence(id)).presenceCount }))
   }
 
   if (req.method === 'POST' && url.pathname === '/api/presence/leave') {
     const body = (await readBody(req)) as { clientId?: unknown }
-    const id = clientId(body?.clientId)
+    const id = presenceId(body?.clientId)
     if (!id) return send(res, 400, { error: 'validation' })
     return withRepo(res, async (repo) => ({ count: (await repo.leavePresence(id)).presenceCount }))
   }

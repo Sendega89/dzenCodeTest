@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import type { Locale } from '@inventory/domain'
 import { SettingsBoard } from '@inventory/ui'
-import { api, forgetToken } from '@/api'
+import { api } from '@/api'
 import { useAppSelector, useI18n } from '@/providers'
 
 const WarehouseMap = dynamic(() => import('@/map').then((mod) => mod.WarehouseMap), { ssr: false })
@@ -21,7 +21,6 @@ export default function SettingsPage() {
   }
 
   async function onLogout() {
-    forgetToken()
     await api.post('/api/auth/logout')
     window.location.href = '/login'
   }

@@ -38,6 +38,7 @@ const typeDefs = /* GraphQL */ `
     productCount: Int!
     totalUsd: Float!
     totalUah: Float!
+    products: [Product!]!
   }
   type Product {
     id: Int!
@@ -56,6 +57,7 @@ const typeDefs = /* GraphQL */ `
     groupName: String
     userId: Int
     userName: String
+    userLogin: String
     createdAt: String!
     price: [Price!]!
   }
@@ -81,16 +83,31 @@ const typeDefs = /* GraphQL */ `
 
 type Context = { user: { id: number; login: string } | null }
 
+type AuthPayload = {
+  token: string
+  user: { id: number; name: string; login: string }
+  snapshot: import('@inventory/domain').Snapshot
+}
+
 type Commands = {
   snapshot(): Promise<import('@inventory/domain').Snapshot>
+  login(login: string, password: string): Promise<AuthPayload | null>
   createOrder(input: unknown): Promise<import('@inventory/domain').Snapshot>
   deleteOrder(id: number): Promise<import('@inventory/domain').Snapshot>
   deleteProduct(id: number): Promise<import('@inventory/domain').Snapshot>
 }
 
+async function defaultLogin(repo: Repo, login: string, password: string): Promise<AuthPayload | null> {
+  const user = await repo.authenticate(login, password)
+  if (!user) return null
+  const { signToken } = await import('@inventory/auth')
+  return { token: await signToken(user), user, snapshot: await repo.snapshot() }
+}
+
 export function createInventoryYoga(repo: Repo, commands: Partial<Commands> = {}) {
   const run = {
     snapshot: () => commands.snapshot?.() ?? repo.snapshot(),
+    login: (login: string, password: string) => commands.login?.(login, password) ?? defaultLogin(repo, login, password),
     createOrder: (input: unknown) => commands.createOrder?.(input) ?? repo.createOrder(input),
     deleteOrder: (id: number) => commands.deleteOrder?.(id) ?? repo.deleteOrder(id),
     deleteProduct: (id: number) => commands.deleteProduct?.(id) ?? repo.deleteProduct(id),
@@ -107,11 +124,9 @@ export function createInventoryYoga(repo: Repo, commands: Partial<Commands> = {}
         },
         Mutation: {
           login: async (_root, args) => {
-            const user = await repo.authenticate(String(args.login), String(args.password))
-            if (!user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
-            const { signToken } = await import('@inventory/auth')
-            const token = await signToken(user)
-            return { token, user, snapshot: await repo.snapshot() }
+            const payload = await run.login(String(args.login), String(args.password))
+            if (!payload) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
+            return payload
           },
           createOrder: async (_root, args, ctx) => {
             if (!ctx.user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
@@ -146,6 +161,6 @@ export function createInventoryYoga(repo: Repo, commands: Partial<Commands> = {}
     }),
     graphqlEndpoint: '/api/graphql',
     context: async ({ request }): Promise<Context> => ({ user: await viewer(request) }),
-    maskedErrors: false,
+    maskedErrors: Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production',
   })
 }
