@@ -1,0 +1,11 @@
+{
+  "name": "@inventory/events",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@inventory/db": "1.0.0",
+    "@inventory/domain": "1.0.0"
+  }
+}

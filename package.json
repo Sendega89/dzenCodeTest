@@ -1,0 +1,37 @@
+{
+  "name": "inventory",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @inventory/web",
+    "dev:products": "npm run dev -w @inventory/products",
+    "dev:services": "npx concurrently -n gateway,orders,products,auth,realtime,worker -c auto \"npm run dev -w @inventory/gateway\" \"npm run dev -w @inventory/orders-service\" \"npm run dev -w @inventory/products-service\" \"npm run dev -w @inventory/auth-service\" \"npm run dev -w @inventory/realtime\" \"npm run dev -w @inventory/worker\"",
+    "build": "npm run wasm:build && npm run build -w @inventory/web && npm run build -w @inventory/products",
+    "start": "npm run start -w @inventory/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "wasm:build": "node packages/wasm/build.mjs",
+    "lint": "tsc -p packages/domain/tsconfig.json --noEmit && tsc -p packages/db/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "db:schema": "node -e \"console.log('schema/inventory.sql')\"",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down -v"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.9.1",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wabt": "^1.0.38"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
