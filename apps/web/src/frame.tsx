@@ -86,7 +86,7 @@ export function Frame({ children }: { children: React.ReactNode }) {
   }, [dispatch])
 
   return (
-    <Shell messages={messages} locale={locale} pathname={pathname} query={query} tabCount={count} onSearch={onSearch}>
+    <Shell messages={messages} locale={locale} pathname={pathname} query={query} tabCount={count} realtime={process.env.NEXT_PUBLIC_REALTIME_URL ? 'socket' : 'http'} onSearch={onSearch}>
       <div className="container-fluid px-0 animate__animated animate__fadeIn page-transition">{children}</div>
     </Shell>
   )

@@ -19,11 +19,12 @@ type ShellProps = {
   pathname: string
   query: string
   tabCount: number | null
+  realtime?: 'socket' | 'http'
   onSearch: (value: string) => void
   children: React.ReactNode
 }
 
-export function Shell({ messages, locale, pathname, query, tabCount, onSearch, children }: ShellProps) {
+export function Shell({ messages, locale, pathname, query, tabCount, realtime = 'http', onSearch, children }: ShellProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(query)
   const [now, setNow] = useState<Date | null>(null)
@@ -92,7 +93,7 @@ export function Shell({ messages, locale, pathname, query, tabCount, onSearch, c
               <ClockIcon />
               <span>{now ? formatClock(now) : '--:--:--'}</span>
             </div>
-            <div className="counter" aria-label={messages.tabs} title={messages.tabs}>
+            <div className="counter" data-realtime={realtime} aria-label={messages.tabs} title={messages.tabs}>
               {tabCount ?? '·'}
             </div>
           </div>

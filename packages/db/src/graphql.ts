@@ -81,7 +81,20 @@ const typeDefs = /* GraphQL */ `
 
 type Context = { user: { id: number; login: string } | null }
 
-export function createInventoryYoga(repo: Repo) {
+type Commands = {
+  snapshot(): Promise<import('@inventory/domain').Snapshot>
+  createOrder(input: unknown): Promise<import('@inventory/domain').Snapshot>
+  deleteOrder(id: number): Promise<import('@inventory/domain').Snapshot>
+  deleteProduct(id: number): Promise<import('@inventory/domain').Snapshot>
+}
+
+export function createInventoryYoga(repo: Repo, commands: Partial<Commands> = {}) {
+  const run = {
+    snapshot: () => commands.snapshot?.() ?? repo.snapshot(),
+    createOrder: (input: unknown) => commands.createOrder?.(input) ?? repo.createOrder(input),
+    deleteOrder: (id: number) => commands.deleteOrder?.(id) ?? repo.deleteOrder(id),
+    deleteProduct: (id: number) => commands.deleteProduct?.(id) ?? repo.deleteProduct(id),
+  }
   return createYoga<Context>({
     schema: createSchema({
       typeDefs,
@@ -89,7 +102,7 @@ export function createInventoryYoga(repo: Repo) {
         Query: {
           snapshot: async (_root, _args, ctx) => {
             if (!ctx.user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
-            return repo.snapshot()
+            return run.snapshot()
           },
         },
         Mutation: {
@@ -103,7 +116,7 @@ export function createInventoryYoga(repo: Repo) {
           createOrder: async (_root, args, ctx) => {
             if (!ctx.user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
             try {
-              return await repo.createOrder({
+              return await run.createOrder({
                 title: args.title,
                 createdAt: args.createdAt,
                 description: args.description ?? '',
@@ -115,7 +128,7 @@ export function createInventoryYoga(repo: Repo) {
           deleteOrder: async (_root, args, ctx) => {
             if (!ctx.user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
             try {
-              return await repo.deleteOrder(Number(args.id))
+              return await run.deleteOrder(Number(args.id))
             } catch (error) {
               fail(error)
             }
@@ -123,7 +136,7 @@ export function createInventoryYoga(repo: Repo) {
           deleteProduct: async (_root, args, ctx) => {
             if (!ctx.user) throw new GraphQLError('unauthorized', { extensions: { code: 'UNAUTHORIZED' } })
             try {
-              return await repo.deleteProduct(Number(args.id))
+              return await run.deleteProduct(Number(args.id))
             } catch (error) {
               fail(error)
             }

@@ -26,6 +26,14 @@ export function createRepo(): Repo {
   return createJsonRepo(file)
 }
 
+export async function loadSnapshot() {
+  const gateway = process.env.GATEWAY_URL?.replace(/\/$/, '')
+  if (!gateway) return getRepo().snapshot()
+  const response = await fetch(`${gateway}/api/snapshot`, { cache: 'no-store' })
+  if (!response.ok) throw new Error(`gateway snapshot failed: ${response.status}`)
+  return response.json() as Promise<import('@inventory/domain').Snapshot>
+}
+
 export function getRepo(): Repo {
   if (!globalStore.__inventoryRepo) globalStore.__inventoryRepo = createRepo()
   return globalStore.__inventoryRepo

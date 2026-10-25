@@ -19,13 +19,20 @@ services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
       JWT_SECRET: inventory-demo-secret
-      NEXT_PUBLIC_REALTIME_URL: http://localhost:4001
+      GATEWAY_URL: http://gateway:4000
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     depends_on:
       mysql:
+        condition: service_healthy
+      gateway:
         condition: service_healthy
 
   products-mfe:
@@ -34,7 +41,23 @@ services:
     ports:
       - "3001:3001"
     environment:
-      NEXT_PUBLIC_SHELL_URL: http://localhost:3000
+      GATEWAY_URL: http://gateway:4000
+      JWT_SECRET: inventory-demo-secret
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  edge:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      products-mfe:
+        condition: service_started
 
   gateway:
     build: .
@@ -43,10 +66,25 @@ services:
       - "4000:4000"
     environment:
       DATABASE_URL: mysql://inventory:inventory@mysql:3306/inventory
+      JWT_SECRET: inventory-demo-secret
+      ORDERS_URL: http://orders:4101
+      PRODUCTS_URL: http://products:4102
+      AUTH_URL: http://auth:4103
       PORT: 4000
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     depends_on:
       mysql:
         condition: service_healthy
+      orders:
+        condition: service_started
+      products:
+        condition: service_started
+      auth:
+        condition: service_started
 
   orders:
     build: .

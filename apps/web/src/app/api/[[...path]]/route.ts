@@ -10,6 +10,29 @@ type Context = { params: Promise<{ path?: string[] }> }
 
 const yoga = createInventoryYoga(getRepo())
 
+function gatewayBase(): string {
+  return process.env.GATEWAY_URL?.replace(/\/$/, '') || ''
+}
+
+async function proxy(request: Request, suffix: string): Promise<Response | null> {
+  const base = gatewayBase()
+  if (!base) return null
+  const hasBody = request.method !== 'GET' && request.method !== 'DELETE'
+  const response = await fetch(`${base}/api/${suffix}`, {
+    method: request.method,
+    headers: { 'content-type': request.headers.get('content-type') || 'application/json' },
+    body: hasBody ? await request.text() : undefined,
+    cache: 'no-store',
+  })
+  return new Response(await response.arrayBuffer(), {
+    status: response.status,
+    headers: {
+      'content-type': response.headers.get('content-type') || 'application/json',
+      'cache-control': 'no-store',
+    },
+  })
+}
+
 function clientId(value: unknown): string | null {
   return typeof value === 'string' && /^[\w-]{8,64}$/.test(value) ? value : null
 }
@@ -21,6 +44,16 @@ async function segments(context: Context): Promise<string[]> {
 
 export async function GET(request: Request, context: Context) {
   const path = await segments(context)
+  if (gatewayBase() && path[0] === 'health' && path.length === 1) {
+    const response = await fetch(`${gatewayBase()}/health`, { cache: 'no-store' })
+    return new Response(await response.text(), {
+      status: response.status,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    })
+  }
+  if (gatewayBase() && path[0] === 'graphql') {
+    return (await proxy(request, path.join('/'))) as Response
+  }
   if (path.length === 1 && path[0] === 'health') {
     const driver = process.env.DATABASE_URL?.startsWith('mysql')
       ? 'mysql'
@@ -37,6 +70,24 @@ export async function GET(request: Request, context: Context) {
 
 export async function POST(request: Request, context: Context) {
   const path = await segments(context)
+  if (gatewayBase() && path[0] === 'auth' && path[1] === 'login') {
+    const proxied = await proxy(request, 'auth/login')
+    const payload = await proxied?.json()
+    if (!proxied?.ok) return json(payload, proxied?.status || 502)
+    const response = json(payload)
+    if (payload?.token) {
+      response.cookies.set(TOKEN_COOKIE, payload.token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+    }
+    return response
+  }
+  if (gatewayBase() && path[0] !== 'locale' && !(path[0] === 'auth' && path[1] === 'logout')) {
+    return (await proxy(request, path.join('/'))) as Response
+  }
   if (path[0] === 'graphql') return yoga.fetch(request)
 
   if (path[0] === 'auth' && path[1] === 'login' && path.length === 2) {
@@ -99,8 +150,9 @@ export async function POST(request: Request, context: Context) {
   return json({ error: 'not_found' }, 404)
 }
 
-export async function DELETE(_request: Request, context: Context) {
+export async function DELETE(request: Request, context: Context) {
   const path = await segments(context)
+  if (gatewayBase()) return (await proxy(request, path.join('/'))) as Response
   if (path[0] === 'orders' && path[1] && path.length === 2) {
     return handle(() => getRepo().deleteOrder(Number(path[1])))
   }

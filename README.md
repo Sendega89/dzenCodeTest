@@ -44,13 +44,23 @@ MySQL и отдельные процессы: веб, микрофронт пр�
 docker compose up --build
 ```
 
-- Приложение: http://localhost:3000
-- Микрофронт: http://localhost:3001/mfe
+Полная версия открывается на http://localhost:8080. Вход `demo` / `demo`. Страница продуктов отдаётся отдельным фронтом, запросы создания и удаления идут через шлюз в сервисы, счётчик вкладок подключён к Socket.io.
+
+- Сайт: http://localhost:8080
+- Оболочка напрямую: http://localhost:3002
+- Микрофронт продуктов: http://localhost:3001/products
 - Шлюз: http://localhost:4000/health
 - Приходы: http://localhost:4101/orders
 - Продукты: http://localhost:4102/products
 - Вход сервиса: http://localhost:4103/login
 - Socket.io: http://localhost:4001
+
+Клик-тесты по уже запущенному Docker:
+
+```bash
+npx playwright install chromium
+BASE_URL=http://localhost:8080 npm run test:e2e
+```
 
 В контейнерах та же схема, что в `schema/inventory.sql`. Пароль базы в compose — учебный `inventory`.
 
@@ -64,9 +74,7 @@ docker compose up --build
 
 Сборка описана в `vercel.json`: зависимости ставятся в корне, Next.js собирается в `apps/web`, результат берётся из `apps/web/.next`.
 
-На Vercel включена защита деплоя (Vercel Authentication). Тестировщик без аккаунта Vercel получит страницу входа. Её нужно выключить: Project Settings → Deployment Protection → отключить Vercel Authentication для Production.
-
-Без `BLOB_READ_WRITE_TOKEN` или `DATABASE_URL` данные на Vercel живут в файле экземпляра функции. Локально и в Docker удаления сохраняются надёжно. Для проверки чек-листа с перезагрузкой страницы надёжнее `npm run dev` или `docker compose up`.
+На Vercel данные живут во временном файле экземпляра, счётчик вкладок идёт обычными запросами, а сервисы не запускаются. Вход `demo` / `demo`. Полная проверка — через Docker.
 
 Переменные смотрите в `.env.example`. Секрет демо-токена: `inventory-demo-secret`. Для публикации задайте свой `JWT_SECRET`.
 

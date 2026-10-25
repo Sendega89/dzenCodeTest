@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { readToken, TOKEN_COOKIE } from '@inventory/auth'
-import { getRepo } from '@inventory/db'
+import { loadSnapshot } from '@inventory/db'
 import type { Locale } from '@inventory/domain'
 import { AppProviders } from '@/providers'
 import { Frame } from '@/frame'
@@ -13,7 +13,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const locale: Locale = jar.get('locale')?.value === 'en' ? 'en' : 'ru'
   const token = jar.get(TOKEN_COOKIE)?.value
   const session = token ? await readToken(token) : null
-  const snapshot = await getRepo().snapshot()
+  const snapshot = await loadSnapshot()
   const user = snapshot.users.find((item) => item.id === session?.id) ?? null
   return (
     <AppProviders snapshot={snapshot} user={user} locale={locale}>
